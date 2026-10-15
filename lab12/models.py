@@ -126,4 +126,10 @@ def l2_summary(pred, Y, brake):
     #   Gọi l2_at(pred, Y, s) cho s = 1, 2, 3 và lấy trung bình ba giá trị cho mỗi cửa sổ. Trả dict: all
     #   (trung bình mọi cửa sổ), brake_slice (trung bình trên cửa sổ có brake = True, nan nếu rỗng),
     #   slice_share (tỷ lệ cửa sổ có brake = True).
-    raise NotImplementedError("TODO l2_summary: xem GUIDE.md, Bước 3")
+    brake = np.asarray(brake, dtype=bool)
+    per_window = np.mean(np.stack([l2_at(pred, Y, s) for s in (1, 2, 3)], axis=1), axis=1)
+    return {
+        "all": float(np.mean(per_window)) if len(per_window) else float("nan"),
+        "brake_slice": float(np.mean(per_window[brake])) if brake.any() else float("nan"),
+        "slice_share": float(np.mean(brake)) if len(brake) else float("nan"),
+    }
