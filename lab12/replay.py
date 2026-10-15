@@ -122,7 +122,31 @@ def compare_with_tol(golden, new, atol=1e-3, rtol=1e-3):
     #   * |golden|. Hai NaN ở cùng vị trí coi là bằng nhau. Trả dict có đúng các khoá: segments,
     #   differ_beyond_tol, not_bit_identical (số đoạn không giống TỪNG BIT), max_abs_diff, atol, rtol,
     #   differing_segments (tối đa 20 chỉ số đầu, dạng list).
-    raise NotImplementedError("TODO compare_with_tol: xem GUIDE.md, Bước 1")
+    golden, new = np.asarray(golden), np.asarray(new)
+    if golden.shape != new.shape or golden.ndim != 2:
+        raise ValueError("golden and new must be 2-D arrays with the same shape")
+
+    bit_equal = (golden == new) | (np.isnan(golden) & np.isnan(new))
+    within_tol = np.isclose(golden, new, atol=atol, rtol=rtol, equal_nan=True)
+    differing = np.flatnonzero(~within_tol.all(axis=1))
+
+    finite_pairs = np.isfinite(golden) & np.isfinite(new)
+    if ((np.isnan(golden) ^ np.isnan(new)) | (np.isinf(golden) ^ np.isinf(new))).any():
+        max_abs_diff = float("inf")
+    elif finite_pairs.any():
+        max_abs_diff = float(np.max(np.abs(golden[finite_pairs] - new[finite_pairs])))
+    else:
+        max_abs_diff = 0.0
+
+    return {
+        "segments": int(golden.shape[0]),
+        "differ_beyond_tol": int(len(differing)),
+        "not_bit_identical": int((~bit_equal.all(axis=1)).sum()),
+        "max_abs_diff": max_abs_diff,
+        "atol": float(atol),
+        "rtol": float(rtol),
+        "differing_segments": differing[:20].astype(int).tolist(),
+    }
 
 
 def summation_order_demo(n=1_000_000, seed=0):
